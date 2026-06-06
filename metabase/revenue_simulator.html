@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DustiniaDelixia — Payment Optimization Revenue Simulator</title>
+<style>
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; color: #1a1a18; background: #fafaf7; }
+  h1 { font-size: 22px; font-weight: 500; }
+  .sub { color: #5f5e5a; font-size: 14px; margin-top: -0.5rem; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); gap: 12px; margin: 1.5rem 0; }
+  .card { background: #f1efe8; border-radius: 8px; padding: 1rem; }
+  .card .lbl { font-size: 13px; color: #5f5e5a; margin: 0 0 4px; }
+  .card .val { font-size: 24px; font-weight: 500; margin: 0; }
+  .ctrl { display:flex; align-items:center; gap:12px; margin-bottom:1rem; }
+  .ctrl label { font-size:14px; color:#5f5e5a; min-width:160px; }
+  .ctrl input[type=range] { flex:1; }
+  .ctrl .out { font-size:14px; font-weight:500; min-width:42px; text-align:right; }
+  .bar-wrap { background:#e7e5dd; border-radius:4px; height:8px; overflow:hidden; }
+  .bar { height:100%; transition:width .25s; }
+  .seg-row { margin-bottom:10px; }
+  .seg-head { display:flex; justify-content:space-between; font-size:13px; margin-bottom:4px; }
+  .pill { padding:1px 8px; border-radius:6px; }
+</style>
+</head>
+<body>
+<h1>Payment Optimization Revenue Simulator</h1>
+<p class="sub">DustiniaDelixia Groceria &mdash; Finance Analyst. Figures derived from the project dataset.</p>
+
+<div class="cards">
+  <div class="card"><p class="lbl">Projected annual uplift</p><p class="val" id="uplift">R$ 0</p></div>
+  <div class="card"><p class="lbl">Addressable orders</p><p class="val" id="orders">0</p></div>
+  <div class="card"><p class="lbl">Uplift vs baseline</p><p class="val" id="pct">0%</p></div>
+</div>
+
+<div class="ctrl"><label>Installment adoption</label><input type="range" min="0" max="100" value="30" step="1" id="adopt"><span class="out" id="adopt-out">30%</span></div>
+<div class="ctrl"><label>AOV lift capture</label><input type="range" min="0" max="100" value="100" step="5" id="capture"><span class="out" id="capture-out">100%</span></div>
+
+<div id="rows"></div>
+
+<script>
+const SEG = [
+  {name:'Top 5% Whale', orders:454,  gap:64.87,  fill:'#534AB7', bg:'#EEEDFE', tx:'#26215C'},
+  {name:'High Value',   orders:503,  gap:9.63,   fill:'#1D9E75', bg:'#E1F5EE', tx:'#04342C'},
+  {name:'Mid Value',    orders:6310, gap:13.78,  fill:'#D85A30', bg:'#FAECE7', tx:'#4A1B0C'},
+  {name:'Standard',     orders:16608,gap:9.64,   fill:'#888780', bg:'#F1EFE8', tx:'#2C2C2A'},
+];
+const fmt = n => 'R$ ' + Math.round(n).toLocaleString('en-US');
+const baseUplift = SEG.reduce((s,x)=>s + x.orders*0.30*x.gap, 0);
+function render(){
+  const adopt = +document.getElementById('adopt').value/100;
+  const capture = +document.getElementById('capture').value/100;
+  document.getElementById('adopt-out').textContent = Math.round(adopt*100)+'%';
+  document.getElementById('capture-out').textContent = Math.round(capture*100)+'%';
+  let total=0, totOrders=0, html='';
+  const maxRow = Math.max(...SEG.map(s=>s.orders*s.gap));
+  SEG.forEach(s=>{
+    const u = s.orders*adopt*s.gap*capture;
+    total+=u; totOrders+=Math.round(s.orders*adopt);
+    const w = Math.min(100,(s.orders*s.gap)/maxRow*100)*adopt*capture;
+    html += `<div class="seg-row"><div class="seg-head"><span class="pill" style="color:${s.tx};background:${s.bg};">${s.name}</span><span style="font-weight:500;">${fmt(u)}</span></div><div class="bar-wrap"><div class="bar" style="width:${w}%;background:${s.fill};"></div></div></div>`;
+  });
+  document.getElementById('rows').innerHTML = html;
+  document.getElementById('uplift').textContent = fmt(total);
+  document.getElementById('orders').textContent = totOrders.toLocaleString('en-US');
+  document.getElementById('pct').textContent = baseUplift>0? '+'+Math.round((total/baseUplift)*100)+'%':'0%';
+}
+document.getElementById('adopt').addEventListener('input',render);
+document.getElementById('capture').addEventListener('input',render);
+render();
+</script>
+</body>
+</html>
