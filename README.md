@@ -31,7 +31,7 @@ Marts mencakup `mart_hvc_payment_profile`, `mart_geo_value`, dan tabel nilai tam
 
 ---
 
-## 2. Cara cepat menjalankan
+## 2. Cara Menjalankan
 
 ```bash
 # 1. letakkan file CSV dataset di ./include/data/
