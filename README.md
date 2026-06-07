@@ -1,130 +1,159 @@
-# DustiniaDelixia Groceria — Finance Analyst Data Pipeline
+# DustiniaDelixia Groceria — Pipeline Data Finance Analyst
 
-End-to-end analytics pipeline for **Persona 1: Finance Analyst** of the MCI 2026 Final Project.
+Pipeline analisis data end-to-end untuk **Persona 1: Finance Analyst** pada Final Project MCI 2026.
 
-> **Business question.** Who are DustiniaDelixia's high-value customers (HVCs), how do they pay, where are they located geographically, and how much revenue is the company leaving on the table by not optimising payment options (installments)?
+> **Pertanyaan bisnis.** Siapa pelanggan bernilai tinggi (High-Value Customer / HVC) DustiniaDelixia, bagaimana mereka membayar, di mana lokasi geografis mereka, dan berapa pendapatan yang hilang karena perusahaan belum mengoptimalkan opsi pembayaran (cicilan)?
 
-The stack is fully containerised and reproducible: **Airflow** orchestrates an idempotent ELT, **ClickHouse** is the analytical warehouse, and **Metabase** serves the executive dashboard. A custom **Payment Optimization Revenue Simulator** is included as the value-add component.
-
----
-
-## 1. Architecture
-
-```
-Raw CSVs ──> Airflow DAG ───────────────────────────────> ClickHouse ──> Metabase
-              │  extract + validate (per table)              │  dustinia_raw.*      dashboard
-              │  load -> dustinia_raw (staging)              │  dustinia_marts.*    + simulator
-              │  DQ gate (row counts, orphans)               │
-              │  build marts (dim + fct + aggregates)        │
-              │  DQ gate (HVC share, negatives)              │
-              └  refresh Metabase cache (add-on)             │
-```
-
-Layered modelling:
-
-| Layer | Database | Contents |
-|-------|----------|----------|
-| Staging | `dustinia_raw` | 1:1 copies of the source CSVs |
-| Marts | `dustinia_marts` | `dim_customer`, `fct_order_payments`, `dim_geolocation`, and four analytical aggregates |
-
-The marts include `mart_hvc_payment_profile`, `mart_geo_value`, and the value-add `mart_payment_uplift`.
+Seluruh stack dijalankan dalam container dan dapat direproduksi: **Airflow** mengorkestrasi ELT yang idempoten, **ClickHouse** menjadi gudang analitis, dan **Metabase** menyajikan dashboard untuk eksekutif. Sebuah **Payment Optimization Revenue Simulator** disertakan sebagai komponen nilai tambah (value-add).
 
 ---
 
-## 2. Quick start
+## 1. Arsitektur
+
+```
+CSV Mentah ──> Airflow DAG ───────────────────────────────> ClickHouse ──> Metabase
+                |  extract + validasi (per tabel)             |  dustinia_raw.*       dashboard
+                |  load -> dustinia_raw (staging)             |  dustinia_marts.*     + simulator
+                |  DQ gate (jumlah baris, orphan record)      |
+                |  build marts (dimensi + fakta + agregat)    |
+                |  DQ gate (proporsi HVC, nilai negatif)      |
+                +- refresh cache Metabase (tambahan)          |
+```
+
+Pemodelan berlapis:
+
+| Layer | Database | Isi |
+|-------|----------|-----|
+| Staging | `dustinia_raw` | Salinan 1:1 dari CSV sumber |
+| Marts | `dustinia_marts` | `dim_customer`, `fct_order_payments`, `dim_geolocation`, dan empat tabel agregat analitis |
+
+Marts mencakup `mart_hvc_payment_profile`, `mart_geo_value`, dan tabel nilai tambah `mart_payment_uplift`.
+
+---
+
+## 2. Cara cepat menjalankan
 
 ```bash
-# 1. place the dataset CSVs in ./include/data/  (already staged in this repo)
-# 2. bring the whole stack up
+# 1. letakkan file CSV dataset di ./include/data/
+# 2. nyalakan seluruh stack
 docker compose up -d
 
-# 3. wait for health checks, then:
+# 3. tunggu health check, lalu akses:
 #    Airflow   -> http://localhost:8080   (admin / admin)
 #    Metabase  -> http://localhost:3000
 #    ClickHouse-> http://localhost:8123
 ```
 
-Trigger the pipeline:
+Menjalankan pipeline:
 
 ```bash
-# from the Airflow UI, unpause + trigger "dustinia_finance_elt"
-# or via CLI:
+# dari UI Airflow, unpause + trigger "dustinia_finance_elt"
+# atau via CLI:
 docker compose exec airflow-scheduler airflow dags trigger dustinia_finance_elt
 ```
 
-The DAG runs end-to-end in a couple of minutes and is **fully idempotent** — every run rebuilds the marts from scratch, so re-runs never duplicate data.
+DAG berjalan end-to-end dalam beberapa menit dan bersifat **idempoten** — setiap run membangun ulang marts dari nol, sehingga run berulang tidak pernah menduplikasi data.
+
+> **Catatan dataset.** File `geolocation.csv` (~43MB) tidak disertakan dalam repo karena ukurannya. Salin file aslinya ke `include/data/` sebelum menjalankan pipeline.
+
+> **Catatan driver Metabase.** Metabase membutuhkan driver ClickHouse. Unduh `clickhouse.metabase-driver.jar` dari rilis resmi metabase-clickhouse-driver (github.com/ClickHouse/metabase-clickhouse-driver/releases), letakkan di folder `metabase-plugins/`, lalu jalankan ulang container Metabase.
 
 ---
 
-## 3. The DAG (`dustinia_finance_elt`)
+## 3. DAG (`dustinia_finance_elt`)
 
-| Task | Purpose |
-|------|---------|
-| `create_databases` | Creates `dustinia_raw` / `dustinia_marts` + staging DDL |
-| `extract_validate_*` | Reads each CSV, checks it parses and is non-empty |
-| `load_staging_*` | Truncates + bulk-inserts into staging (type coercion for dates/zips) |
-| `dq_gate_staging` | **Hard gate**: minimum row counts + orphan-payment check |
-| `build_marts` | Executes the dimensional + aggregate SQL |
-| `dq_gate_marts` | **Hard gate**: HVC share in 5–15% band, no negative order values |
-| `refresh_metabase_cache` | Add-on: pings Metabase so the demo shows fresh data |
+| Task | Tujuan |
+|------|--------|
+| `create_databases` | Membuat `dustinia_raw` / `dustinia_marts` + DDL staging |
+| `extract_validate_*` | Membaca tiap CSV, memastikan dapat di-parse dan tidak kosong |
+| `load_staging_*` | Truncate + bulk-insert ke staging (dengan koersi tipe untuk tanggal/zip) |
+| `dq_gate_staging` | **Gerbang keras**: jumlah baris minimum + pengecekan orphan payment |
+| `build_marts` | Mengeksekusi SQL dimensional + agregat |
+| `dq_gate_marts` | **Gerbang keras**: proporsi HVC dalam rentang 5-15%, tidak ada nilai order negatif |
+| `refresh_metabase_cache` | Tambahan: ping Metabase agar demo selalu menampilkan data terbaru |
 
-Data-quality gates are real `AirflowFailException`s — a bad load stops the pipeline instead of silently shipping wrong numbers to the dashboard.
-
----
-
-## 4. Metabase dashboard
-
-Connect Metabase to ClickHouse (`host=clickhouse, port=8123, db=dustinia_marts`), then paste each query from [`metabase/dashboard_questions.sql`](metabase/dashboard_questions.sql) into a new SQL question. Cards:
-
-1. KPI — total HVC revenue & share
-2. AOV by value segment (the ~5x gap)
-3. Payment-method mix within HVCs
-4. Installment behaviour by segment
-5. Geographic HVC concentration (BR state map)
-6. **The money slide** — payment-optimisation uplift
-7. HVC revenue trend over time
-8. Top HVC cities (filterable)
-
-The dashboard is built for a **non-technical audience** — every card answers a question the Head of Finance actually asked.
+Gerbang data-quality berupa `AirflowFailException` sungguhan — load yang buruk akan menghentikan pipeline alih-alih diam-diam mengirim angka salah ke dashboard.
 
 ---
 
-## 5. Value-add — Payment Optimization Revenue Simulator
+## 4. Dashboard Metabase
 
-`mart_payment_uplift` quantifies the revenue gap between installment and non-installment orders, then projects the uplift if more credit-card orders adopted installments. The accompanying interactive simulator (`metabase/revenue_simulator.html`) lets the Head of Finance drag two levers live during the demo:
+Hubungkan Metabase ke ClickHouse (`host=clickhouse, port=8123, db=dustinia_marts`), lalu tempel setiap query dari `metabase/dashboard_questions.sql` ke SQL question baru. Kartu yang dibuat:
 
-- **Installment adoption rate** — what % of addressable orders convert
-- **AOV lift capture** — how much of the observed AOV gap is realised
+1. KPI — total revenue & share HVC
+2. AOV per value segment (jurang ~5x)
+3. Komposisi metode pembayaran HVC
+4. Perilaku cicilan per segmen
+5. Konsentrasi geografis HVC (peta negara bagian Brazil via GeoJSON)
+6. **Slide andalan** — uplift dari optimasi pembayaran
+7. Tren revenue HVC dari waktu ke waktu
+8. Kota-kota HVC teratas (dapat difilter)
 
-This turns a static finding into a defensible, tunable business case.
-
----
-
-## 6. Headline findings (from the actual dataset)
-
-- HVCs (top decile by lifetime spend) make up **~10% of customers** but spend **~5.6x more per order** (R$607 vs R$112 AOV).
-- **Credit card dominates** HVC revenue (~82%); installment orders carry a **64% higher AOV** than single-payment orders (R$198 vs R$121).
-- HVC revenue is geographically concentrated — **SP, RJ, MG** account for the bulk of HVC revenue, but states like **RS and RJ show higher HVC *penetration*** (~10%+), signalling expansion targets.
-- A conservative model (30% adoption of the observed AOV gap) projects **~R$84k** of recoverable annual revenue from payment optimisation, with the **Standard and Mid-Value segments holding the largest absolute opportunity** by volume.
+Dashboard dirancang untuk **audiens non-teknis** — setiap kartu menjawab pertanyaan yang benar-benar ditanyakan Head of Finance.
 
 ---
 
-## 7. Repository layout
+## 5. Nilai Tambah — Payment Optimization Revenue Simulator
+
+`mart_payment_uplift` mengukur selisih pendapatan antara order dengan cicilan dan tanpa cicilan, lalu memproyeksikan uplift jika lebih banyak order kartu kredit beralih ke cicilan. Simulator interaktif pendamping (`metabase/revenue_simulator.html`) memungkinkan Head of Finance menggeser dua kendali secara langsung saat demo:
+
+- **Tingkat adopsi cicilan** — berapa persen order yang dapat digarap beralih ke cicilan
+- **AOV lift capture** — seberapa besar selisih AOV yang teramati benar-benar terealisasi
+
+Ini mengubah temuan statis menjadi business case yang dapat diatur dan dipertahankan. File HTML berdiri sendiri (cukup dibuka di browser, tanpa server).
+
+---
+
+## 6. Temuan utama (dari dataset asli)
+
+- HVC (desil teratas berdasarkan total belanja) hanya **~10% pelanggan** namun berbelanja **~5,4x lebih besar per order** (AOV R$607 vs R$112).
+- **Kartu kredit mendominasi** pendapatan HVC (~81%); order dengan cicilan memiliki **AOV 64% lebih tinggi** dibanding order sekali bayar (R$198 vs R$121).
+- Pendapatan HVC terkonsentrasi secara geografis — **SP, RJ, MG** menyumbang porsi terbesar, namun negara bagian seperti **RS dan RJ menunjukkan penetrasi HVC yang lebih tinggi** (>10%), menandai target ekspansi.
+- Model konservatif (adopsi 30% dari selisih AOV yang teramati) memproyeksikan **~R$84 ribu** pendapatan tahunan yang dapat direbut dari optimasi pembayaran, dengan **segmen Standard dan Mid-Value menyimpan peluang absolut terbesar** karena volume order.
+
+> Catatan metodologi: temuan hubungan cicilan dengan AOV bersifat korelasional, bukan kausal. Angka uplift sebaiknya diperlakukan sebagai hipotesis yang perlu divalidasi melalui A/B test atau rollout terukur.
+
+---
+
+## 7. Struktur repository
 
 ```
 dustinia_finance/
 ├── docker-compose.yml
 ├── dags/
-│   └── dustinia_finance_elt.py        # the Airflow DAG
+│   └── dustinia_finance_elt.py        # DAG Airflow
 ├── sql/
-│   ├── staging/01_create_staging.sql  # raw landing tables
-│   └── marts/02_build_marts.sql       # dimensional model + aggregates
+│   ├── staging/01_create_staging.sql  # tabel landing mentah
+│   └── marts/02_build_marts.sql       # model dimensional + agregat
 ├── metabase/
-│   ├── dashboard_questions.sql        # paste-ready dashboard SQL
-│   └── revenue_simulator.html         # value-add interactive tool
+│   ├── dashboard_questions.sql        # SQL siap tempel untuk dashboard
+│   └── revenue_simulator.html         # alat interaktif nilai tambah
+├── metabase-plugins/                  # driver ClickHouse (.jar) + GeoJSON peta
 ├── include/
-│   ├── data/                          # source CSVs
+│   ├── data/                          # CSV sumber
 │   └── scripts/init_metabase_db.sql
 └── docs/
-    └── DustiniaDelixia_Finance_Paper.docx  # IEEE-format paper
+    └── DustiniaDelixia_Finance_Paper.docx  # paper format IEEE
 ```
+
+---
+
+## 8. Komponen wajib
+
+| Komponen | Status |
+|----------|--------|
+| Arsitektur DAG Airflow | OK — ELT idempoten dengan dua data-quality gate |
+| ClickHouse | OK — Model berlapis staging -> marts |
+| Metabase Dashboard | OK — 8 kartu untuk audiens non-teknis |
+| Nilai tambah | OK — Payment Optimization Revenue Simulator interaktif |
+
+---
+
+## 9. Stack teknologi
+
+- **Orkestrasi:** Apache Airflow 2.9
+- **Gudang data:** ClickHouse 24.8
+- **BI / Dashboard:** Metabase v0.50
+- **Metadata & app DB:** PostgreSQL 16
+- **Containerisasi:** Docker Compose
+- **Sumber data:** Brazilian E-Commerce & Marketing Funnel (Olist), disesuaikan untuk studi kasus DustiniaDelixia Groceria
