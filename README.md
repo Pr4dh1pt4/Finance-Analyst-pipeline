@@ -93,7 +93,7 @@ Dashboard dirancang untuk **audiens non-teknis** — setiap kartu menjawab perta
 
 ---
 
-## 5. Nilai Tambah — Payment Optimization Revenue Simulator
+## 5. Payment Optimization Revenue Simulator
 
 `mart_payment_uplift` mengukur selisih pendapatan antara order dengan cicilan dan tanpa cicilan, lalu memproyeksikan uplift jika lebih banyak order kartu kredit beralih ke cicilan. Simulator interaktif pendamping (`metabase/revenue_simulator.html`) memungkinkan Head of Finance menggeser dua kendali secara langsung saat demo:
 
