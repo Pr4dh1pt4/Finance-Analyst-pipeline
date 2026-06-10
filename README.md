@@ -1,3 +1,8 @@
+| Name           | NRP        |
+| ---            | ---        | 
+| Pradhipta Raja Mahendra | 5025241055 |  
+
+
 # DustiniaDelixia Groceria — Pipeline Data Finance Analyst
 
 Pipeline analisis data end-to-end untuk **Persona 1: Finance Analyst** pada Final Project MCI 2026.
@@ -312,5 +317,3 @@ dustinia_finance/
 | Metabase Dashboard | OK — 8 kartu untuk audiens non-teknis |
 
 ---
-
-*Disusun oleh Pradhipta Raja Mahendra — Final Project Lab MCI 2026.*
