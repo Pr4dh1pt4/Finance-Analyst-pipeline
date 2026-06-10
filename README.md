@@ -145,7 +145,7 @@ dustinia_finance/
 | Arsitektur DAG Airflow | OK — ELT idempoten dengan dua data-quality gate |
 | ClickHouse | OK — Model berlapis staging -> marts |
 | Metabase Dashboard | OK — 8 kartu untuk audiens non-teknis |
-| Nilai tambah | OK — Payment Optimization Revenue Simulator interaktif |
+| Add Value | OK — Payment Optimization Revenue Simulator interaktif |
 
 ---
 
