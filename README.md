@@ -4,7 +4,7 @@ Pipeline analisis data end-to-end untuk **Persona 1: Finance Analyst** pada Fina
 
 > **Pertanyaan bisnis.** Siapa pelanggan bernilai tinggi (High-Value Customer / HVC) DustiniaDelixia, bagaimana mereka membayar, di mana lokasi geografis mereka, dan berapa pendapatan yang hilang karena perusahaan belum mengoptimalkan opsi pembayaran (cicilan)?
 
-Seluruh stack dijalankan dalam container dan dapat direproduksi: **Airflow** mengorkestrasi ELT yang idempoten, **ClickHouse** menjadi gudang analitis, dan **Metabase** menyajikan dashboard untuk eksekutif. Sebuah **Payment Optimization Revenue Simulator** disertakan sebagai komponen nilai tambah (value-add).
+Seluruh stack dijalankan dalam container dan dapat direproduksi: **Airflow** mengorkestrasi ELT yang idempoten, **ClickHouse** menjadi gudang analitis, dan **Metabase** menyajikan dashboard untuk eksekutif. Sebuah **Payment Optimization Revenue Simulator** disertakan sebagai komponen interaktif.
 
 ---
 
@@ -18,7 +18,7 @@ Seluruh stack dijalankan dalam container dan dapat direproduksi: **Airflow** men
 6. [Pemodelan data ClickHouse](#6-pemodelan-data-clickhouse)
 7. [Definisi & metodologi HVC](#7-definisi--metodologi-hvc)
 8. [Dashboard Metabase](#8-dashboard-metabase)
-9. [Nilai tambah — Revenue Simulator](#9-nilai-tambah--revenue-simulator)
+9. [Revenue Simulator](#9-nilai-tambah--revenue-simulator)
 10. [Temuan utama](#10-temuan-utama)
 11. [Kendala teknis & solusinya](#11-kendala-teknis--solusinya)
 12. [Struktur repository](#12-struktur-repository)
@@ -163,7 +163,7 @@ Pemodelan berlapis dua skema:
 - **`dim_customer`** — agregasi tingkat pelanggan dengan ukuran RFM (recency, frequency, monetary), rata-rata cicilan, share order bercicilan, dan penetapan segmen nilai + flag HVC.
 - **`mart_hvc_payment_profile`** — jawaban utama untuk Head of Finance: profil pembayaran per segmen × metode pembayaran (jumlah order, revenue, AOV, persentase cicilan).
 - **`mart_geo_value`** — konsentrasi HVC per negara bagian (penetrasi, revenue, share) untuk peta.
-- **`mart_payment_uplift`** — tabel nilai tambah yang menghitung peluang uplift pembayaran (lihat bagian 9).
+- **`mart_payment_uplift`** — tabel yang menghitung peluang uplift pembayaran (lihat bagian 9).
 
 Engine yang dipakai `MergeTree` dengan `ORDER BY` sesuai kunci akses, ditambah `LowCardinality(String)` untuk kolom kategorikal (status, metode bayar, negara bagian) demi efisiensi.
 
@@ -279,7 +279,7 @@ dustinia_finance/
 │   └── marts/02_build_marts.sql       # model dimensional + agregat
 ├── metabase/
 │   ├── dashboard_questions.sql        # 8 query siap tempel
-│   └── revenue_simulator.html         # alat interaktif nilai tambah
+│   └── revenue_simulator.html         # alat interaktif
 ├── metabase-plugins/                  # driver ClickHouse (.jar) + GeoJSON peta
 ├── include/
 │   ├── data/                          # CSV sumber (geolocation.csv disalin manual)
