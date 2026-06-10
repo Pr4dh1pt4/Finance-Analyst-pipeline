@@ -22,7 +22,7 @@ Seluruh stack dijalankan dalam container dan dapat direproduksi: **Airflow** men
 10. [Temuan utama](#10-temuan-utama)
 11. [Kendala teknis & solusinya](#11-kendala-teknis--solusinya)
 12. [Struktur repository](#12-struktur-repository)
-13. [Tech_Stack](#13-stack-teknologi)
+13. [Tech Stack](#13-stack-teknologi)
 
 ---
 
