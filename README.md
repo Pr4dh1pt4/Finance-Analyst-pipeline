@@ -22,7 +22,7 @@ Seluruh stack dijalankan dalam container dan dapat direproduksi: **Airflow** men
 10. [Temuan utama](#10-temuan-utama)
 11. [Kendala teknis & solusinya](#11-kendala-teknis--solusinya)
 12. [Struktur repository](#12-struktur-repository)
-13. [Stack teknologi](#13-stack-teknologi)
+13. [Tech_Stack](#13-stack-teknologi)
 
 ---
 
@@ -291,7 +291,7 @@ dustinia_finance/
 
 ---
 
-## 13. Stack teknologi
+## 13. Tech Stack
 
 - **Orkestrasi:** Apache Airflow 2.9 (LocalExecutor)
 - **Gudang data:** ClickHouse 24.8 (MergeTree, kolumnar)
@@ -310,7 +310,6 @@ dustinia_finance/
 | Arsitektur DAG Airflow | OK — ELT idempoten dengan dua data-quality gate |
 | ClickHouse | OK — Model berlapis staging → marts |
 | Metabase Dashboard | OK — 8 kartu untuk audiens non-teknis |
-| Nilai tambah | OK — Payment Optimization Revenue Simulator interaktif |
 
 ---
 
