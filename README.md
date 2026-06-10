@@ -216,7 +216,7 @@ Dashboard dirancang untuk **audiens non-teknis** — setiap kartu menjawab perta
 
 ---
 
-## 9. Nilai Tambah — Revenue Simulator
+## 9. Revenue Simulator
 
 `mart_payment_uplift` mengukur selisih AOV antara order dengan cicilan dan tanpa cicilan untuk tiap segmen, lalu memproyeksikan uplift jika lebih banyak order kartu kredit non-cicilan beralih ke cicilan.
 
